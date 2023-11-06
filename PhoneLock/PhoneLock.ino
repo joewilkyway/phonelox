@@ -8,8 +8,8 @@
 /*| Pins |*/
 /*\------/*/
 /* rotary encoder */
-#define PIN_IN1 2
-#define PIN_IN2 3
+#define PIN_IN1 3
+#define PIN_IN2 2
 /* rotary encoders button */
 #define PIN_BUTTON 4
 /* servo*/
@@ -58,18 +58,26 @@ struct menuItem
   const uint8_t *font;
 };
 
-struct menuItem menuItemTime[] =
+menuItem menuItemTime[] =
 {
-  {-40, 0, "0", u8g2_font_helvR12_tf},
-  {0, 0, "0", u8g2_font_helvR12_tf},
-  {40, 0, "0", u8g2_font_helvR12_tf}
+  {-48, 12, "0", u8g2_font_helvR12_tf},
+  {0, 12, "0", u8g2_font_helvR12_tf},
+  {48, 12, "0", u8g2_font_helvR12_tf}
 };
-struct menuItem menuItemSLT = {0, -30, "Set Lock Time", u8g2_font_helvR10_tf};
 
-struct menuItem menuItemSplashMessage[] = 
+menuItem menuItemTimeLabel[] =
 {
-  {0, 10, "0", u8g2_font_helvR12_tf},
+  {menuItemTime[0].xOffset + 14, 12, "Hr", u8g2_font_helvR08_tf},
+  {menuItemTime[1].xOffset + 16, 12, "Min", u8g2_font_helvR08_tf},
+  {menuItemTime[2].xOffset + 11, 12, "S", u8g2_font_helvR08_tf}
+};
+
+menuItem menuItemSLT = {0, -22, "Set Lock Time", u8g2_font_helvR12_tf};
+
+menuItem menuItemSplashMessage[] = 
+{
   {0, -10, "0", u8g2_font_helvR12_tf},
+  {0, 10, "0", u8g2_font_helvR12_tf},
 };
 
 void setup() {
@@ -99,7 +107,7 @@ void setup() {
   u8g2.begin();  
   u8g2.firstPage();
   // displaying a splash screen
-  drawAlert("PhoneBox");
+  drawAlert("PhoneLox");
   delay(500);
 
 }
@@ -115,7 +123,7 @@ void drawStrCentred(struct menuItem *item) {
 void drawAlert(const char *string){
   u8g2.firstPage();
   do {
-    u8g2.setFont(u8g2_font_helvR10_tf); //Setting helvetica font
+    u8g2.setFont(u8g2_font_helvR08_tf); //Setting helvetica font
     u8g2.drawButtonUTF8(64, 32+6, U8G2_BTN_SHADOW1|U8G2_BTN_HCENTER|U8G2_BTN_BW2, 0,  2,  2, string ); //Displaying the Alert
   } while ( u8g2.nextPage() );
 }
@@ -125,15 +133,11 @@ void showSetLockTime(int cursorXPos){
   do {
     drawStrCentred(&menuItemSLT); //Set lock time text at the top
     //Displaying the position/hours to be set
-    for(int i; i > 3; i++)
+    for(int i = 0; i < 3; i++)
     {
       drawStrCentred(&menuItemTime[i]);
+      drawStrCentred(&menuItemTimeLabel[i]);
     }
-    
-    u8g2.setFont(u8g2_font_helvR08_tf);
-    // drawStrCentred(displayWidth/8 + 20, 43, "Hrs");
-    // drawStrCentred(displayWidth/2 + 20, 43, "Mins");
-    // drawStrCentred(112 + 20, 43, "Secs");
 
     //Displaying the cursor
     u8g2.drawTriangle(cursorXPos, 28, cursorXPos - 5, 33, cursorXPos + 5, 33);
@@ -141,12 +145,12 @@ void showSetLockTime(int cursorXPos){
   } while ( u8g2.nextPage() );
 }
 
-char setLockTime(){
+int setLockTime(){
   /*Prompts user for the lock time and returns an int array of {hours,minutes,seconds}*/
 
   //Initializing local variables
-  int pos = 0;
-  char lockDuration[3] = {/*Hours=*/0, /*Minutes=*/0, /*Seconds=*/0}; 
+  char pos = 0;
+  int lockDuration[3] = {/*Hours=*/0, /*Minutes=*/0, /*Seconds=*/0}; 
   bool buttonState = 1;
   char buttonCounter, cursorXPos;
   buttonCounter = cursorXPos = 0;
@@ -158,15 +162,14 @@ char setLockTime(){
 
     // Defines where the triangle cursors x position should be using branchless coding to save storage
     cursorXPos = (buttonCounter == 0)*(DISPLAY_WIDTH/8) + (buttonCounter == 1)*(DISPLAY_WIDTH/2) + (buttonCounter == 2)*(112);
-    //Run the setLockTime Screen
-    for (int i; i > 3; i++)
-    {
-      // Converting the numbers into strings
-      const char timeStr[4];
-      sprintf(timeStr, "%d", lockDuration[i]); 
-      menuItemTime[i].value = timeStr;
+    
+    char str[3][4];
+    for(int i = 0; i < 3; i++){
+      sprintf(str[i], "%d", lockDuration[i]); 
+      menuItemTime[i].value = str[i];
     }
 
+    //Run the setLockTime Screen
     showSetLockTime(cursorXPos);
 
     // Reading the button
@@ -192,7 +195,7 @@ char setLockTime(){
 
     //Setting time to position based on how many times the button has been pressed
     if (buttonCounter > 2){
-      char (*lockDurationPtr)[3] = &lockDuration;
+      int (*lockDurationPtr)[3] = &lockDuration;
       return lockDurationPtr;
     }
     else {
@@ -223,7 +226,7 @@ void showLockSplash(){
   //This is used to select a random message
   unsigned char randomInt = random(sizeof(messages)/sizeof(char*));
   unsigned char sizeOfString = strlen(messages[randomInt]);
-  unsigned char overflowLength = 17;
+  unsigned char overflowLength = 15;
 
   // Storing the current message (string literal) as currentMessage
   const char* currentMessage = messages[randomInt];
@@ -242,6 +245,7 @@ void showLockSplash(){
     u8g2.firstPage();
     do {
     // Printing the strings centred
+    menuItemSplashMessage[0].yOffset = -10;
     menuItemSplashMessage[0].value = firstPart;
     menuItemSplashMessage[1].value = secondPart;
     drawStrCentred(&menuItemSplashMessage[0]);
@@ -255,6 +259,7 @@ void showLockSplash(){
     u8g2.firstPage();
     do {
       // Display string
+      menuItemSplashMessage[0].yOffset = 0;
       menuItemSplashMessage[0].value = currentMessage;
       drawStrCentred(&menuItemSplashMessage[0]);
     } while ( u8g2.nextPage() );
@@ -310,7 +315,7 @@ void lock(char lockHours, char lockMinutes, char lockSeconds){
 
 void loop() {
   // put your main code here, to run repeatedly:
-  char* lockTime = setLockTime();
+  int* lockTime = setLockTime();
   lock(lockTime[0],lockTime[1],lockTime[2]);
 }
 
