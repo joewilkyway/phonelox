@@ -14,6 +14,9 @@
 #define PIN_BUTTON 4
 /* servo*/
 #define PIN_SERVO 7
+
+#define PIN_POTENTIOMETER A0
+#define THRESHOLD 670
 /*Diplsay pins: clock=13, data=11, cs=10, dc= 9 , reset=8 */
 
 /*/------------------------------------\*/
@@ -39,11 +42,6 @@ U8G2_SH1106_128X64_NONAME_1_4W_SW_SPI u8g2(/*rotation=*/U8G2_R0, /*clock=*/13, /
 
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 64
-
-/*/-----------------------------------\*/
-/*| Definitions for the potentiometer |*/
-/*\-----------------------------------/*/
-bool doorOpen = 0;
 
 /*/---------------------------------\*/
 /*| Definitions for the servo motor |*/
@@ -266,6 +264,12 @@ void showLockSplash(){
   }
 }
 
+bool doorOpen(){
+  int sensorValue = analogRead(PIN_POTENTIOMETER); // Read the potentiometer
+  Serial.println(sensorValue);
+  return (sensorValue > THRESHOLD); //true if door is open
+}
+
 void lock(char lockHours, char lockMinutes, char lockSeconds){
   //initial time
   unsigned long t1 = millis();
@@ -274,12 +278,15 @@ void lock(char lockHours, char lockMinutes, char lockSeconds){
   Serial.println("This is the lock duration(s):");
   Serial.println(lockTime);
   bool lockEngaged = false;
-
+  Serial.println("This is the potentiometer reading");
   //Check if door is open
   //If so, ask for it to be closed & check
-  while(doorOpen){
+  bool doorIsOpen = doorOpen();
+  while(doorIsOpen){
     drawAlert("Please close door");
-    //Add some sort of doorOpenCheck()
+    delay(1);
+    doorIsOpen = doorOpen();
+    delay(1);
   }
 
   // Displaying engaging lock text
@@ -309,7 +316,6 @@ void lock(char lockHours, char lockMinutes, char lockSeconds){
     else if((t2-t1) % 10000 == 0){
       showLockSplash();
     }
-
   }
 }
 
@@ -318,4 +324,3 @@ void loop() {
   int* lockTime = setLockTime();
   lock(lockTime[0],lockTime[1],lockTime[2]);
 }
-
