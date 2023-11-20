@@ -7,31 +7,20 @@
 /*/------\*/
 /*| Pins |*/
 /*\------/*/
-/* rotary encoder */
-#define PIN_IN1 3
-#define PIN_IN2 2
-/* rotary encoders button */
-#define PIN_BUTTON 4
-/* servo*/
-#define PIN_SERVO 7
-
+#define PIN_IN1 3 //Rotary Encoder
+#define PIN_IN2 2 //Rotary Encoder
+#define PIN_BUTTON 4 //Rotary Encoder Button
+#define PIN_SERVO 7 // Servo Pin
 #define PIN_POTENTIOMETER A0
 #define THRESHOLD 670
-/*Diplsay pins: clock=13, data=11, cs=10, dc= 9 , reset=8 */
 
 /*/------------------------------------\*/
 /*| Definitions for the Rotary Encoder |*/
 /*\------------------------------------/*/
+RotaryEncoder *encoder = nullptr; // Pointer to the rotary encoder instance.
 
-// A pointer to the dynamic created rotary encoder instance.
-// (It's recommended by the author of the RotaryEncoder Library)
-RotaryEncoder *encoder = nullptr;
-
-// This will be called by the interrupt service routine
-/* At the point of change, the state of the rotary encoder will be 
-   stored within the encoder object */
-void checkPosition()
-{
+void checkPosition(){
+  /* Called by ISR, updates 'encoder' object */
   encoder->tick(); // Calling tick() to checks the state of the rotary encoder
 }
 
@@ -50,40 +39,67 @@ Servo servo;
 
 struct menuItem
 {
-  int16_t xOffset;		/* in pixel */
-  int16_t yOffset;		/* in pixel */
-  const char *value;			/* position, array index */
-  const uint8_t *font;
+  // menuItem defines the position, text(value) and font to be displayed
+  // Used by drawStrCentred()
+  int16_t xOffset;		/* x offset from centre of screen */
+  int16_t yOffset;		/* y offset from centre of screen */
+  const char *value;  /* This is the text to be displayed */
+  const uint8_t *font;  /* Pass U8g2lib fonts*/
 };
 
 menuItem menuItemTime[] =
 {
-  {-48, 12, "0", u8g2_font_helvR12_tf},
-  {0, 12, "0", u8g2_font_helvR12_tf},
-  {48, 12, "0", u8g2_font_helvR12_tf}
+  // This is the lock time that gets changed
+  // Used by drawStrCentred()
+  {-48, 12, "0", u8g2_font_helvR12_tf}, //Hours
+  {0, 12, "0", u8g2_font_helvR12_tf}, //Minutes
+  {48, 12, "0", u8g2_font_helvR12_tf} //Seconds
 };
 
 menuItem menuItemTimeLabel[] =
 {
+  // Lock time labels 'Hr','Min','s'
+  // Used by drawStrCentred()
   {menuItemTime[0].xOffset + 14, 12, "Hr", u8g2_font_helvR08_tf},
   {menuItemTime[1].xOffset + 16, 12, "Min", u8g2_font_helvR08_tf},
   {menuItemTime[2].xOffset + 11, 12, "S", u8g2_font_helvR08_tf}
 };
 
-menuItem menuItemSLT = {0, -22, "Set Lock Time", u8g2_font_helvR12_tf};
+menuItem menuItemSLT = {0, -22, "Set Lock Time", u8g2_font_helvR12_tf}; //Set lock time text
+
 
 menuItem menuItemSplashMessage[] = 
 {
+  /* This defines the positions and fonts for
+     the humorous text used in showLockSplash() */
   {0, -10, "0", u8g2_font_helvR12_tf},
   {0, 10, "0", u8g2_font_helvR12_tf},
 };
+
+
+const char *messages[] = 
+  {
+    // Humorous messages:
+    "Eating your phone...",
+    "Reading your messages...",
+    "Waiting...",
+    "I am your self control",
+    "Hacking the mainframe...",
+    "Locked and loaded",
+    "Are you watching?",
+    "Reducing your screen time...",
+    "Hopefully this works...",
+    "Delicious silicon...",
+    "La La La...",
+    "Hold tight!",
+    "New phone who dis"
+  };
 
 void setup() {
   Serial.begin(9600);
   /*/-------------------------------\*/
   /*| Initiating the Rotary Encoder |*/
   /*\-------------------------------/*/
-  Serial.println("Initiating the rotary encoder");
 
   // Declaring the encoder object with the predefined pins
   encoder = new RotaryEncoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
@@ -92,8 +108,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(PIN_IN1), checkPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(PIN_IN2), checkPosition, CHANGE);
 
-  // for the button
-  pinMode(PIN_BUTTON,INPUT_PULLUP);
+  
+  pinMode(PIN_BUTTON,INPUT_PULLUP); // for the button
 
   // for the servo
   servo.attach(PIN_SERVO);
@@ -103,14 +119,15 @@ void setup() {
   /*| Initiating the OLED Display |*/
   /*\-----------------------------/*/
   u8g2.begin();  
-  u8g2.firstPage();
   // displaying a splash screen
   drawAlert("PhoneLox");
-  delay(500);
+  delay(1000);
 
 }
 
 void drawStrCentred(struct menuItem *item) {
+  /*Takes a menuItem as a parameter, and draws it centred
+    on the screen.*/
   u8g2.setFont(item->font);
   u8g2.setFontPosCenter();
   int x = DISPLAY_WIDTH/2 - u8g2.getStrWidth(item->value)/2 + item->xOffset;
@@ -119,6 +136,8 @@ void drawStrCentred(struct menuItem *item) {
 }
 
 void drawAlert(const char *string){
+  /*Pass a string literal as an argument,
+    string is displayed on the screen*/
   u8g2.firstPage();
   do {
     u8g2.setFont(u8g2_font_helvR08_tf); //Setting helvetica font
@@ -127,12 +146,14 @@ void drawAlert(const char *string){
 }
 
 void showSetLockTime(int cursorXPos){
+  /* Pass the cursors x position and this will
+     display the set lock time screen. */
   u8g2.firstPage();
   do {
-    drawStrCentred(&menuItemSLT); //Set lock time text at the top
-    //Displaying the position/hours to be set
+    drawStrCentred(&menuItemSLT); //Set lock time text at the top 
     for(int i = 0; i < 3; i++)
     {
+      //Displaying the position/hours to be set
       drawStrCentred(&menuItemTime[i]);
       drawStrCentred(&menuItemTimeLabel[i]);
     }
@@ -162,6 +183,8 @@ int setLockTime(){
     cursorXPos = (buttonCounter == 0)*(DISPLAY_WIDTH/8) + (buttonCounter == 1)*(DISPLAY_WIDTH/2) + (buttonCounter == 2)*(112);
     
     char str[3][4];
+    // Turning the hours, minutes and seconds set by user
+    // Into strings and storing them in the respective menuItems
     for(int i = 0; i < 3; i++){
       sprintf(str[i], "%d", lockDuration[i]); 
       menuItemTime[i].value = str[i];
@@ -176,8 +199,6 @@ int setLockTime(){
     // This is the logic for the switch on the rotary encoder
     if (buttonState == 0) {
         buttonCounter++;
-        Serial.println("Forloop activated, this is the buttonCounter:");
-        Serial.println(buttonCounter,DEC);
         encoder->setPosition(0);
         while(buttonState == 0){
           buttonState = digitalRead(PIN_BUTTON);
@@ -203,24 +224,10 @@ int setLockTime(){
 }
 
 void showLockSplash(){
-  const char *messages[] = 
-  {
-    "Eating your phone...",
-    "Reading your messages...",
-    "Waiting...",
-    "I am your self control",
-    "Hacking the mainframe...",
-    "Locked and loaded",
-    "Are you watching?",
-    "Reducing your screen time...",
-    "Hopefully this works...",
-    "Delicious silicon...",
-    "La La La...",
-    "Hold tight!",
-    "New phone who dis"
-  };
-  //Random number based on millis()
-  randomSeed(millis());
+  /*Takes no arguments and
+    displays *messages[] on the screen*/
+
+  randomSeed(millis()); //Random number based on elapsed time
   //This is used to select a random message
   unsigned char randomInt = random(sizeof(messages)/sizeof(char*));
   unsigned char sizeOfString = strlen(messages[randomInt]);
@@ -229,10 +236,9 @@ void showLockSplash(){
   // Storing the current message (string literal) as currentMessage
   const char* currentMessage = messages[randomInt];
 
-  // If the string is longer than 17 it gets split
+  // If the string is longer than overflowLength it gets split
   //Takes about 75ms
-  if (sizeOfString > overflowLength)
-  {
+  if (sizeOfString > overflowLength){
     // Splitting the string into two using pointer arithmetics for speed
     char* firstPart = new char[overflowLength + 1]; 
     strncpy(firstPart, currentMessage, overflowLength);
@@ -251,9 +257,8 @@ void showLockSplash(){
     } while ( u8g2.nextPage() );
     delete[] firstPart;
   }
-  // If the string is shorter than 12
-  else
-  {
+  // If the string is shorter than overflowLength
+  else{
     u8g2.firstPage();
     do {
       // Display string
@@ -265,40 +270,43 @@ void showLockSplash(){
 }
 
 bool doorOpen(){
+  /* Checks whether the door is open,
+    if so returns true */
   int sensorValue = analogRead(PIN_POTENTIOMETER); // Read the potentiometer
-  Serial.println(sensorValue);
   return (sensorValue > THRESHOLD); //true if door is open
 }
 
 void lock(char lockHours, char lockMinutes, char lockSeconds){
+  /*Takes three parameters:
+  - char lockHours 
+  - char lockMinutes
+  - char lockSeconds
+   Locks the phoneLox for that amount of time*/
+
   //initial time
   unsigned long t1 = millis();
   //lock time in seconds
   int lockTime = lockHours*60*60 + lockMinutes*60 +lockSeconds;
-  Serial.println("This is the lock duration(s):");
-  Serial.println(lockTime);
-  bool lockEngaged = false;
-  Serial.println("This is the potentiometer reading");
+
   //Check if door is open
   //If so, ask for it to be closed & check
   bool doorIsOpen = doorOpen();
+  drawAlert("Please close door");
+  // Loops whilst the the door is open, and prevents other code running
   while(doorIsOpen){
-    drawAlert("Please close door");
-    delay(1);
     doorIsOpen = doorOpen();
     delay(1);
   }
 
   // Displaying engaging lock text
   drawAlert("Engaging Lock");
-
   // Engaging servo lock
   for (int x = 0; x <= 90; x++){
     servo.write(x);
     delay(5); 
   }
-  lockEngaged = true;
-  while(lockEngaged){
+
+  while(true){
     unsigned long t2 = millis(); 
     //If the lockTime equals time elapsed
     if(lockTime <= (t2-t1)/1000){
@@ -310,7 +318,7 @@ void lock(char lockHours, char lockMinutes, char lockSeconds){
       // Displaying disengaging lock text
       drawAlert("Please take your phone :)");
       delay(1000);
-      lockEngaged = false;
+      return;
     }
     // Every 10 seconds display lockSplash
     else if((t2-t1) % 10000 == 0){
