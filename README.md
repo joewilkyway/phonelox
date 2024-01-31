@@ -6,6 +6,7 @@ Phonelox is an cheap and easy box that is used to restrict you from using your p
 ## Usage
 Just put your phone into the box, select the lock duration and close the door. 
 Your phone is now locked in the PhoneLox, say goodbye to phone-crastination.
+![](/assets/images/PhoneLox-03.jpg)
 
 ## Components
 The components used are as follows:
@@ -17,6 +18,8 @@ The components used are as follows:
 - 9g Servo Motor
 - 3D Printed Parts provided in [STL Files](/STL Files/)
 
+![](/assets/images/PhoneLox-08.jpg)
+![](/assets/images/PhoneLox-09.jpg)
 
 > [!NOTE]
 > This is a project for a module at university, it is not comprehensively documented or tested.
